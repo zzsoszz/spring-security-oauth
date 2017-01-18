@@ -15,6 +15,9 @@
  */
 package org.springframework.security.oauth.examples.sparklr.config;
 
+import javax.sql.DataSource;
+
+//import org.h2.jdbcx.JdbcDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,6 +46,9 @@ import org.springframework.security.oauth2.provider.approval.UserApprovalHandler
 import org.springframework.security.oauth2.provider.request.DefaultOAuth2RequestFactory;
 import org.springframework.security.oauth2.provider.token.TokenStore;
 import org.springframework.security.oauth2.provider.token.store.InMemoryTokenStore;
+import org.springframework.security.oauth2.provider.token.store.JdbcTokenStore;
+
+import com.mysql.cj.jdbc.MysqlDataSource;
 
 /**
  * @author Rob Winch
@@ -89,13 +95,23 @@ public class OAuth2ServerConfig {
 
 	}
 
+//	@Bean
+//	public DataSource dataSource() {
+//	     JdbcDataSource datasource = new JdbcDataSource();
+//	     return datasource;
+//	}
+//	
+	
+
+	
+	
 	@Configuration
 	@EnableAuthorizationServer
 	protected static class AuthorizationServerConfiguration extends AuthorizationServerConfigurerAdapter {
 
 		@Autowired
 		private TokenStore tokenStore;
-
+		
 		@Autowired
 		private UserApprovalHandler userApprovalHandler;
 
@@ -108,9 +124,11 @@ public class OAuth2ServerConfig {
 
 		@Override
 		public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
-
+			
 			// @formatter:off
-			clients.inMemory().withClient("tonr")
+			//clients.inMemory()
+			clients.jdbc(dataSource())
+					.withClient("tonr")
 			 			.resourceIds(SPARKLR_RESOURCE_ID)
 			 			.authorizedGrantTypes("authorization_code", "implicit")
 			 			.authorities("ROLE_CLIENT")
@@ -158,8 +176,24 @@ public class OAuth2ServerConfig {
 		}
 
 		@Bean
+		public DataSource dataSource() {
+			 MysqlDataSource datasource = new MysqlDataSource() ;  
+//			 datasource.setServerName("localhost");  
+//			 datasource.setDatabaseName("test");
+//			 datasource.setPort(3306);
+//			 datasource.setUser("root");
+//			 datasource.setPassword("");
+			 datasource.setURL("jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=UTF-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC");
+			 datasource.setPort(3306);
+			 datasource.setUser("root");
+			 datasource.setPassword("");
+		     return datasource;
+		}
+		
+		@Bean
 		public TokenStore tokenStore() {
-			return new InMemoryTokenStore();
+			//return new InMemoryTokenStore();
+			 return new JdbcTokenStore(dataSource());
 		}
 
 		@Override
